@@ -11,6 +11,9 @@ of equivalent strength.
 The conversion is reversible (although this utility does not
 implement it) and no entropy of the binary input will be lost.
 
+The implementation is super-fast for usual key-sizes because it
+avoids expensive operations like multiplication or division.
+
 
 Example
 -------
