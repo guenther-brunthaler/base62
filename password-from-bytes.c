@@ -18,8 +18,10 @@ static char const alphabet[]= {
    , 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
    , 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm'
    , 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'
-   , '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
+   , '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
 };
+
+#define RADIX DIM(alphabet)
 
 static char *number;
 
@@ -34,7 +36,63 @@ static void die(char const *msg) {
 }
 
 int main(int argc, char **argv) {
-   assert(DIM(alphabet) == 62);
+   unsigned reserved= 1, length= 1;
+   int byte;
+   assert(RADIX == 62);
    atexit(cleanup);
+   if (!(number= malloc(length))) {
+      mem_err: die("Could not allocate space for the password!");
+   }
+   assert(length == 1 && length <= reserved);
+   number[0]= 0;
+   assert((char)(1 << CHAR_BIT - 1) > 0);
+   while ((byte= getchar()) != EOF) {
+      int bit;
+      for (bit= 1 << CHAR_BIT - 1; bit; bit>>= 1) {
+         unsigned i, acc= !!(byte & bit);
+         for (i= 0; i < length; ++i) {
+            if ((acc+= number[i] << 1) >= RADIX) {
+               acc-= RADIX;
+               assert(acc  < RADIX);
+               number[i]= (char)(unsigned char)acc;
+               assert(number[i] == acc);
+               acc= 1;
+            } else {
+               number[i]= (char)(unsigned char)acc;
+               assert(number[i] == acc);
+               acc= 0;
+            }
+         }
+         if (acc) {
+            assert(acc == 1);
+            if (length >= reserved) {
+               size_t nres;
+               void *nbuf;
+               assert(length == reserved);
+               if (!(nbuf= realloc(number, nres= reserved << 1))) {
+                  goto mem_err;
+               }
+               number= nbuf;
+               reserved= (unsigned)nres;
+               assert((size_t)reserved == nres);
+            }
+            number[length++]= (char)(unsigned char)acc;
+            assert(number[length - 1] == acc);
+         }
+      }
+   }
+   {
+      unsigned i;
+      for (i= length; i--; ) {
+         assert(number[i] >= 0);
+         assert(number[i] < RADIX);
+         if (putchar(alphabet[number[i]]) == EOF) goto wr_err;
+      }
+      if (putchar('\n') == EOF) goto wr_err;
+   }
+   if (ferror(stdin) || !feof(stdin)) {
+      die("Error reading from standard input!");
+   }
+   if (fflush(stdout)) wr_err: die("Error writing to standard output!");
    return EXIT_SUCCESS;
 }
