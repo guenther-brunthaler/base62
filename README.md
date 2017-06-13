@@ -8,8 +8,8 @@ The base62 utility converts binary cryptographic key material of
 arbitrary size into the shortest possible alphanumeric password
 of equivalent strength.
 
-The conversion is revertible (although this utility does not
-implement this) and no entropy of the binary input will be lost.
+The conversion is reversible (although this utility does not
+implement it) and no entropy of the binary input will be lost.
 
 
 Example
@@ -41,8 +41,8 @@ block until enough entropy is available. However, as a
 consequence of this, passwords created from /dev/urandom have
 unknown and therefore possibly low entropy.
 
-Important: Never use anything else than bs=1 when using "dd" to
-read from a character device such as /dev/random!
+**Important**: Never use anything else than bs=1 when using "dd"
+to read from a character device such as /dev/random!
 
 Even though it sometimes works with a larger block sizes, there
 are situations where less pseudorandom data is actually returned
@@ -60,7 +60,7 @@ How to build
 ------------
 
 base62 is written in portable C and can be compiled with any
-C-compiler supporting the C89 standard or better.
+C-compiler (assuming it supports the C89 standard or better).
 
 Under UNIX, Linux, Cygwin or MinGW it is simple: Just run
 
@@ -86,7 +86,7 @@ following characters (in that order) for the base-62 digits:
 
 *  A through Z
 *  a through z
-*  9 through 9
+*  0 through 9
 
 Second, there is no byte padding using the "="-character. The
 output is as short as possible, with unused bits in the last
@@ -122,13 +122,13 @@ for converting confidential key material.
 Caveats
 -------
 
-The algorithm used to convert the input date into a base-62
+The algorithm used to convert the input data into a base-62
 number requires running time which increases approximately
 quadratically with the length of the generated output.
 
 While this is quite fast for all symmetric or asymmetric key
 sizes that make any sense, it does not scale well for keys of
-absurd bit sizes.
+absurdly large bit sizes.
 
 
 License Information
@@ -136,5 +136,5 @@ License Information
 
 Copyright (c) 2017 Guenther Brunthaler. All rights reserved.
 
-This program is free software.
+This program is free software.  
 Distribution is permitted under the terms of the GPLv3.
