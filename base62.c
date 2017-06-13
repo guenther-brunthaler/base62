@@ -36,7 +36,7 @@ static void die(char const *msg) {
 }
 
 int main(int argc, char **argv) {
-   unsigned reserved= 1, length= 1;
+   unsigned reserved= 1024, length= 1;
    int byte;
    assert(RADIX == 62);
    atexit(cleanup);
