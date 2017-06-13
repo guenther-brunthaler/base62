@@ -1,4 +1,4 @@
-TARGETS = password-from-bytes
+TARGETS = base62
 
 .PHONY: all clean
 
