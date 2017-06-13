@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
    int byte;
    assert(RADIX == 62);
    atexit(cleanup);
-   if (!(number= malloc(length))) {
+   if (!(number= malloc(reserved))) {
       mem_err: die("Could not allocate space for the password!");
    }
    assert(length == 1 && length <= reserved);
@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
                reserved= (unsigned)nres;
                assert((size_t)reserved == nres);
             }
+            assert(length < reserved);
             number[length++]= (char)(unsigned char)acc;
             assert(number[length - 1] == acc);
          }
