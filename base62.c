@@ -35,6 +35,24 @@ static void die(char const *msg) {
    exit(EXIT_FAILURE);
 }
 
+#define UNSIGNED_MSB_POS (sizeof(unsigned) * CHAR_BIT - 1)
+#define UNSIGNED_MSB_VAL (1u << UNSIGNED_MSB_POS)
+
+/* (int)x < 0 ? UINT_MAX : 0 */
+static unsigned NEGP(unsigned x) {
+   return ~(x >> UNSIGNED_MSB_POS) + 1;
+}
+
+/* x < y ? UINT_MAX : 0 */
+static unsigned LTP(unsigned x, unsigned y) {
+   return NEGP(x - y);
+}
+
+/* x == 0 ? 0 : UINT_MAX */
+static unsigned NZEROP(unsigned x) {
+   return LTP(x, 0) | LTP(0, x);
+}
+
 int main(int argc, char **argv) {
    unsigned reserved= 1024, length= 1;
    int byte;
@@ -49,19 +67,21 @@ int main(int argc, char **argv) {
    while ((byte= getchar()) != EOF) {
       int bit;
       for (bit= 1 << CHAR_BIT - 1; bit; bit>>= 1) {
-         unsigned i, acc= !!(byte & bit);
+         unsigned i, acc= NZEROP(byte & bit) & 1;
          for (i= 0; i < length; ++i) {
-            if ((acc+= number[i] << 1) >= RADIX) {
-               acc-= RADIX;
-               assert(acc  < RADIX);
-               number[i]= (char)(unsigned char)acc;
-               assert(number[i] == acc);
-               acc= 1;
-            } else {
-               number[i]= (char)(unsigned char)acc;
-               assert(number[i] == acc);
-               acc= 0;
-            }
+            unsigned cf;
+            acc+= number[i] << 1;
+            cf= RADIX - 1 - acc & UNSIGNED_MSB_VAL;
+            assert(cf == 0 || cf == UNSIGNED_MSB_VAL);
+            assert(cf ? acc >= RADIX : acc < RADIX);
+            cf= NZEROP(cf);
+            assert(cf == 0 || cf == ~0);
+            assert(cf == ~0 ? acc >= RADIX : acc < RADIX);
+            acc-= cf & RADIX;
+            assert(acc < RADIX);
+            number[i]= (char)(unsigned char)acc;
+            assert(number[i] == acc);
+            acc= cf & 1;
          }
          if (acc) {
             assert(acc == 1);
