@@ -108,6 +108,27 @@ algorithms as they are.
 Cryptographic security
 ---------------------
 
+Since version 2017.166, the utility avoids code paths which
+depend on the bit pattern of the input data. This hardens the
+utility against several kinds of side-channel attacks, such as
+power demand monitoring or measuring its execution time. Such
+attack vectors should not be dismissed lightly in times where
+smart meters are being installed everywhere.
+
+Unfortunately, the new data-independent code paths led to a
+slowdown of the utility by about 24 % on my machine. YMMV.
+However, as the overall execution time of the utility is
+negligible unless the keys to be converted are dozens of
+thousands of bits long, the security gain seems worth the
+slowdown.
+
+Nevertheless, the old data dependent code-paths are still
+available in the code and can be enabled by adding
+"-D DATA_DEPENDENT_CODE_PATHS=1" to the compiler flags (or
+defining the macro "DATA_DEPENDENT_CODE_PATHS" with the value "1"
+by some other means) when building the utility. This restores the
+old behavior of versions before 2017.166.
+
 The utility does not try to mlock() its data while processing or
 "burn" variables after use, because such functionality is not
 provided by the C standard and the reliability of such features

@@ -21,7 +21,7 @@
     * Add "-D DATA_DEPENDENT_BRANCHES=1" to your CFLAGS when building this
     * program if you want a faster but less secure version.
     *
-    * On my machine, this makes the utility faster by about 23 % (when built
+    * On my machine, this makes the utility faster by about 24 % (when built
     * with -O3). YMMV.
     *
     * Unfortunately, this feature also enables data-dependent code paths,
