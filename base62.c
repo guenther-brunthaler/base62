@@ -10,8 +10,6 @@
 #include "dim_sdbrke8ae851uitgzm4nv3ea2.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include <limits.h>
 #include <assert.h>
 
@@ -71,7 +69,7 @@ static void die(char const *msg) {
 #define LT_MASK(x, y) NEG_MASK(x - y)
 
 /* return x != 0 ? UINT_MAX : 0; */
-/* Warning: Evalualtes <x> multiple times! */
+/* Warning: Evaluates <x> multiple times! */
 #define NZERO_MASK_MULTI_EVAL(x) (LT_MASK(x, 0) | LT_MASK(0, x))
 
 int main(int argc, char **argv) {
