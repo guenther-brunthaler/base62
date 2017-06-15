@@ -1,4 +1,6 @@
 /*
+ * Version 2017.166
+ *
  * Copyright (c) 2017 Guenther Brunthaler. All rights reserved.
  *
  * This source file is free software.
@@ -12,6 +14,27 @@
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
+
+#ifndef DATA_DEPENDENT_BRANCHES
+   /* User configuration option:
+    *
+    * Add "-D DATA_DEPENDENT_BRANCHES=1" to your CFLAGS when building this
+    * program if you want a faster but less secure version.
+    *
+    * On my machine, this makes the utility faster by about 23 % (when built
+    * with -O3). YMMV.
+    *
+    * Unfortunately, this feature also enables data-dependent code paths,
+    * which means an attacker measuring the run time or power consumption of
+    * the program may deduce some information about the bit pattern of your
+    * secret binary key from which you want to derive an alphanumeric
+    * password.
+    *
+    * Therefore, this feature is disabled by default. Also, the difference
+    * will barely be noticable unless your key is dozens of thousands of bits
+    * long. */
+   #define DATA_DEPENDENT_BRANCHES 0
+#endif
 
 static char const alphabet[]= {
      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M'
@@ -35,23 +58,21 @@ static void die(char const *msg) {
    exit(EXIT_FAILURE);
 }
 
+/* Bit position of MSB for type "unsigned int". */
 #define UNSIGNED_MSB_POS (sizeof(unsigned) * CHAR_BIT - 1)
+
+/* Bit mask corresponding to UNSIGNED_MSB_POS. */
 #define UNSIGNED_MSB_VAL (1u << UNSIGNED_MSB_POS)
 
-/* (int)x < 0 ? UINT_MAX : 0 */
-static unsigned NEGP(unsigned x) {
-   return ~(x >> UNSIGNED_MSB_POS) + 1;
-}
+/* return (int)x < 0 ? UINT_MAX : 0; */
+#define NEG_MASK(x) (~((x) >> UNSIGNED_MSB_POS) + 1)
 
-/* x < y ? UINT_MAX : 0 */
-static unsigned LTP(unsigned x, unsigned y) {
-   return NEGP(x - y);
-}
+/* return x < y ? UINT_MAX : 0; */
+#define LT_MASK(x, y) NEG_MASK(x - y)
 
-/* x == 0 ? 0 : UINT_MAX */
-static unsigned NZEROP(unsigned x) {
-   return LTP(x, 0) | LTP(0, x);
-}
+/* return x != 0 ? UINT_MAX : 0; */
+/* Warning: Evalualtes <x> multiple times! */
+#define NZERO_MASK_MULTI_EVAL(x) (LT_MASK(x, 0) | LT_MASK(0, x))
 
 int main(int argc, char **argv) {
    unsigned reserved= 1024, length= 1;
@@ -67,21 +88,37 @@ int main(int argc, char **argv) {
    while ((byte= getchar()) != EOF) {
       int bit;
       for (bit= 1 << CHAR_BIT - 1; bit; bit>>= 1) {
-         unsigned i, acc= NZEROP(byte & bit) & 1;
+         unsigned i, acc;
+         #if DATA_DEPENDENT_BRANCHES
+            acc= !!(byte & bit);
+         #else
+            acc= byte & bit;
+            acc= NZERO_MASK_MULTI_EVAL(acc) & 1;
+         #endif
          for (i= 0; i < length; ++i) {
-            unsigned cf;
-            acc+= number[i] << 1;
-            cf= RADIX - 1 - acc & UNSIGNED_MSB_VAL;
-            assert(cf == 0 || cf == UNSIGNED_MSB_VAL);
-            assert(cf ? acc >= RADIX : acc < RADIX);
-            cf= NZEROP(cf);
-            assert(cf == 0 || cf == ~0);
-            assert(cf == ~0 ? acc >= RADIX : acc < RADIX);
-            acc-= cf & RADIX;
-            assert(acc < RADIX);
-            number[i]= (char)(unsigned char)acc;
-            assert(number[i] == acc);
-            acc= cf & 1;
+            #if DATA_DEPENDENT_BRANCHES
+               if ((acc+= number[i] << 1) >= RADIX) {
+                  acc-= RADIX;
+                  assert(acc < RADIX);
+                  number[i]= (char)(unsigned char)acc;
+                  assert(number[i] == acc);
+                  acc= 1;
+               } else {
+                  assert(acc < RADIX);
+                  number[i]= (char)(unsigned char)acc;
+                  assert(number[i] == acc);
+                  acc= 0;
+               }
+            #else
+               unsigned c=
+                  RADIX - 1 - (acc+= number[i] << 1) & UNSIGNED_MSB_VAL
+               ;
+               acc-= (c= NZERO_MASK_MULTI_EVAL(c)) & RADIX;
+               assert(acc < RADIX);
+               number[i]= (char)(unsigned char)acc;
+               assert(number[i] == acc);
+               acc= c & 1;
+            #endif
          }
          if (acc) {
             assert(acc == 1);
