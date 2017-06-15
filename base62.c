@@ -110,10 +110,8 @@ int main(int argc, char **argv) {
                   acc= 0;
                }
             #else
-               unsigned c=
-                  RADIX - 1 - (acc+= number[i] << 1) & UNSIGNED_MSB_VAL
-               ;
-               acc-= (c= NZERO_MASK_MULTI_EVAL(c)) & RADIX;
+               unsigned c;
+               acc-= (c= NEG_MASK(RADIX - 1 - (acc+= number[i] << 1))) & RADIX;
                assert(acc < RADIX);
                number[i]= (char)(unsigned char)acc;
                assert(number[i] == acc);
