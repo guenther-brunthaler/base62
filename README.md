@@ -52,6 +52,29 @@ are situations where less pseudorandom data is actually returned
 than has been requested, making your keys weaker than expected.
 
 
+Secure password generation
+--------------------------
+
+A POSIX shell script 'pwgen-from-dev_random-as-base62' for
+generating cryptographically strong passwords on GNU-based
+systems such as Linux is also shipped together with the 'base62'
+utility.
+
+It is a simple wrapper around the 'base62' utility and generates
+passwords equivalent to a binary key strength of 256 bits by
+default:
+
+$ pwgen-from-dev_random-as-base62 # Strength like a 256 bit key
+$ pwgen-from-dev_random-as-base62 128 # Like a 128 bit key
+
+It fetches its key material from /dev/random, but can also be
+instructed to use /dev/urandom or any other random source:
+
+$ pwgen-from-dev_random-as-base62 < /dev/urandom
+$ pwgen-from-dev_random-as-base62 < /dev/hwrng
+$ pwgen-from-dev_random-as-base62 < /some/file/with/random/bytes
+
+
 Keywords
 --------
 

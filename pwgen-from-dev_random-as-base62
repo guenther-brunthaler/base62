@@ -1,0 +1,104 @@
+#! /bin/sh
+set -e
+exit_version() {
+	cat << EOF; exit
+$APPLICATION_NAME version 2017.329
+
+Copyright (c) 2017 Guenther Brunthaler. All rights reserved.
+
+This script is free software.
+Distribution is permitted under the terms of the GPLv3.
+EOF
+}
+
+exit_help() {
+	cat << EOF; echo; exit_version # Text width: 66 columns.
+$APPLICATION_NAME - generate cryptographically secure random
+passwords
+
+Usage: $APPLICATION_NAME [ <options> ... ] [ <bit_strength> ] \\
+       [ < <random_source> ]
+
+By default, $APPLICATION_NAME reads high-quality binary random
+bytes (with full entropy) from /dev/random and displays them as
+base-62 ASCII passwords.
+
+The required password strength in bits can be specified as an
+argument; the default is 256 bits.
+
+In this context, "password strength" means that the generated
+passwords will require the same effort of brute-force guessing as
+a binary cryptographic key of that bit length.
+
+If standard input is a terminal or /dev/null, $APPLICATION_NAME
+will get the required high-quality random bytes from /dev/random.
+
+If anything else has been redirected to $APPLICATION_NAME as its
+standard input, it is assumed to be some sort of random-number
+device, and the required random bytes will be read from there.
+
+For instance, redirecting from /dev/urandom implements a
+non-blocking version of $APPLICATION_NAME. This will no longer
+guarantee that the generated passwords have full entropy, but
+$APPLICATION_NAME will never block and always return a password
+immediately.
+EOF
+}
+APPLICATION_NAME=${0##*/}
+
+trap 'test $? = 0 || echo "$0 failed!" >& 2' 0
+
+while getopts Vh opt
+do
+	case $opt in
+		V) exit_version;;
+		h) exit_help;;
+		*) false || exit
+	esac
+done
+shift `expr $OPTIND - 1 || :`
+
+command -v base62 > /dev/null 2>& 1 || {
+	{
+		echo "The 'base62' utility needs to be installed for this"
+		echo "script to work."
+	} >& 2
+	false || exit
+}
+
+# Unfortunately, the "stat" utility is not portable across operating systems.
+# We need to create different versions of function devtype() for returning a
+# device type identifier which will then be used for comparing /dev/null
+# against /dev/stdin.
+case `uname -o` in
+	GNU | GNU/*)
+		devtype() {
+			# This implementation of devtype() chose to use
+			# $MAJOR:$MINOR as a device type identifier.
+			stat -Lc '%t:%T' -- "$1"
+		}
+		;;
+	*)
+		cat <<- . >& 2;
+			Sorry, your operating system is not supported by this
+			script. But you can easily add such support by adding
+			a custom devtype() function for your o/s to the
+			script.
+.
+		false || exit
+esac
+
+test -e /dev/stdin
+if test -t 0 || test "`devtype /dev/stdin`" = "`devtype /dev/null`"
+then
+	d=/dev/random
+	test -c "$d"
+	exec < "$d"
+fi
+bytebits=`getconf CHAR_BIT`
+
+test $# -le 1
+wantbits=${1:-256}
+expr x"$wantbits" : x'[1-9][0-9]*$' > /dev/null
+needbytes=`expr \( $wantbits + $bytebits - 1 \) / $bytebits`
+dd bs=1 count=$needbytes 2> /dev/null | base62
