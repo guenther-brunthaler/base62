@@ -20,7 +20,7 @@ AUG_CFLAGS = $(AUG_CPPFLAGS) $(CFLAGS)
 install: all
 	mkdir -p -- "$(DESTDIR)$(PREFIX)"/bin
 	cp -p -- $(TARGETS) $(EXECUTABLE_SCRIPTS) "$(DESTDIR)$(PREFIX)/bin"/
-	
+
 uninstall:
 	cd -- "$(DESTDIR)$(PREFIX)/bin" \
 		&& rm -- $(TARGETS) $(EXECUTABLE_SCRIPTS)
